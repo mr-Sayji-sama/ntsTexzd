@@ -1,0 +1,299 @@
+﻿@page
+@model ntsTexzd.Pages.ProductsModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    ViewData["Title"] = "Таблица продуктов";
+}
+
+<div class="container mt-5">
+    <h2 class="mb-4">Products</h2>
+    <button class="btn btn-success mb-3" onclick="newProduct()" data-bs-toggle="modal" data-bs-target="#editModal">
+        Добавить продукт
+    </button>
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-md-2">
+            <input type="number" name="Code" value="@Model.Code" class="form-control" placeholder="Code" />
+        </div>
+
+        <div class="col-md-3">
+            <input type="text" name="Name" value="@Model.Name" class="form-control" placeholder="Name" />
+        </div>
+
+        <div class="col-md-3">
+            <input type="text" name="BarCode" value="@Model.BarCode" class="form-control" placeholder="BarCode" />
+        </div>
+
+        <div class="col-md-2">
+            <input type="number" step="0.01" name="Price" value="@Model.Price" class="form-control" placeholder="Price ≥" />
+        </div>
+
+        <!-- Выбор размера страницы -->
+        <div class="col-md-2">
+            <select name="PageSize" class="form-select" onchange="this.form.submit()">
+                <option value="25" selected="@(Model.PageSize == 25)">25</option>
+                <option value="50" selected="@(Model.PageSize == 50)">50</option>
+                <option value="100" selected="@(Model.PageSize == 100)">100</option>
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100" type="submit">
+                Применить фильтр
+            </button>
+        </div>
+    </form>
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>BarCode</th>
+                <th>Quantity</th>
+                <th>Model</th>
+                <th>Sort</th>
+                <th>Color</th>
+                <th>Size</th>
+                <th>Weight</th>
+                <th>DateChanges</th>
+                <th>Price</th>
+                <th>Действие</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Products)
+            {
+                <tr id="row-@item.Id">
+                    <td>@item.Code</td>
+                    <td>@item.Name</td>
+                    <td>@item.BarCode</td>
+                    <td>@item.Quantity</td>
+                    <td>@item.Model</td>
+                    <td>@item.Sort</td>
+                    <td>@item.Color</td>
+                    <td>@item.Size</td>
+                    <td>@item.Weight</td>
+                    <td>@item.DateChanges.ToString("yyyy-MM-dd")</td>
+                    <td>@item.Price.PriceValue.ToString("C")</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary me-1" data-bs-toggle="modal"
+                                data-bs-target="#editModal" onclick="editProduct('@item.Id')">
+                            Правка
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteProduct('@item.Id')">
+                            Удалить
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <nav class="mt-3">
+        <ul class="pagination justify-content-center">
+
+            <!-- Первая -->
+            <li class="page-item @(Model.PageNumber == 1 ? "disabled" : "")">
+                <a class="page-link"
+                   href="?PageNumber=1&PageSize=@Model.PageSize&Code=@Model.Code&Name=@Model.Name&BarCode=@Model.BarCode&Price=@Model.Price">
+                    ⏮
+                </a>
+            </li>
+
+            <!-- Назад -->
+            <li class="page-item @(Model.PageNumber == 1 ? "disabled" : "")">
+                <a class="page-link"
+                   href="?PageNumber=@(Model.PageNumber - 1)&PageSize=@Model.PageSize&Code=@Model.Code&Name=@Model.Name&BarCode=@Model.BarCode&Price=@Model.Price">
+                    &laquo;
+                </a>
+            </li>
+
+            <!-- Номера страниц -->
+            @for (int i = Model.StartPage; i <= Model.EndPage; i++)
+            {
+                <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                    <a class="page-link"
+                       href="?PageNumber=@i&PageSize=@Model.PageSize&Code=@Model.Code&Name=@Model.Name&BarCode=@Model.BarCode&Price=@Model.Price">
+                        @i
+                    </a>
+                </li>
+            }
+
+            <!-- Вперёд -->
+            <li class="page-item @(Model.PageNumber == Model.TotalPages ? "disabled" : "")">
+                <a class="page-link"
+                   href="?PageNumber=@(Model.PageNumber + 1)&PageSize=@Model.PageSize&Code=@Model.Code&Name=@Model.Name&BarCode=@Model.BarCode&Price=@Model.Price">
+                    &raquo;
+                </a>
+            </li>
+
+            <!-- Последняя -->
+            <li class="page-item @(Model.PageNumber == Model.TotalPages ? "disabled" : "")">
+                <a class="page-link"
+                   href="?PageNumber=@Model.TotalPages&PageSize=@Model.PageSize&Code=@Model.Code&Name=@Model.Name&BarCode=@Model.BarCode&Price=@Model.Price">
+                    ⏭
+                </a>
+            </li>
+
+        </ul>
+    </nav>
+</div>
+
+<!-- Modal для редактирования -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">Edit Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <input type="hidden" id="productId" />
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Code</label>
+                            <input type="number" class="form-control" id="editCode">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Name</label>
+                            <input type="text" class="form-control" id="editName">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">BarCode</label>
+                            <input type="text" class="form-control" id="editBarCode">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" step="0.01" class="form-control" id="editQuantity">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Price</label>
+                            <input type="number" step="0.01" class="form-control" id="editPrice">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Model</label>
+                            <input type="text" class="form-control" id="editModel">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Sort</label>
+                            <input type="text" class="form-control" id="editSort">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Color</label>
+                            <input type="text" class="form-control" id="editColor">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Size</label>
+                            <input type="text" class="form-control" id="editSize">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Weight</label>
+                            <input type="text" class="form-control" id="editWeight">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Date Changes</label>
+                            <input type="date" class="form-control" id="editDateChanges">
+                        </div>
+                        <input type="hidden" id="priceId" />
+                        <input type="hidden" id="isNew" value="false" />
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveProduct()">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script> *@
+<script>
+    // Словарь для быстрого поиска
+    var products = {};
+    @foreach (var p in Model.Products)
+    {
+            <text>products['@p.Id'] = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(p));</text>
+    }
+
+    function editProduct(id) {
+        var p = products[id];
+        if(!p) return;
+        document.getElementById("isNew").value = "false";
+        document.getElementById("productId").value = p.Id;
+        document.getElementById("priceId").value   = p.Price.Id;
+        document.getElementById("editCode").value = p.Code;
+        document.getElementById("editName").value = p.Name;
+        document.getElementById("editBarCode").value = p.BarCode;
+        document.getElementById("editQuantity").value = p.Quantity;
+        document.getElementById("editPrice").value = p.Price.PriceValue;
+        document.getElementById("editModel").value = p.Model;
+        document.getElementById("editSort").value = p.Sort;
+        document.getElementById("editColor").value = p.Color;
+        document.getElementById("editSize").value = p.Size;
+        document.getElementById("editWeight").value = p.Weight;
+        document.getElementById("editDateChanges").value = p.DateChanges.split('T')[0];
+    }
+
+    async function saveProduct() {
+        var isNew = document.getElementById("isNew").value === "true";
+        var id = document.getElementById("productId").value;
+        var priceId = document.getElementById("priceId").value;
+        var data = {
+            id: id,
+            priceId: priceId,
+            code: parseInt(document.getElementById("editCode").value),
+            name: document.getElementById("editName").value,
+            barCode: document.getElementById("editBarCode").value,
+            quantity: parseFloat(document.getElementById("editQuantity").value),
+            priceValue: parseFloat(document.getElementById("editPrice").value),
+            model: document.getElementById("editModel").value,
+            sort: document.getElementById("editSort").value,
+            color: document.getElementById("editColor").value,
+            size: document.getElementById("editSize").value,
+            weight: document.getElementById("editWeight").value,
+            dateChanges: document.getElementById("editDateChanges").value
+        };
+         
+        if (isNew) {
+            // ---------- CREATE ----------
+            await fetch(`/api`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        }
+        else {
+            // Вызываем API для сохранения (PUT)
+            await fetch(`/api/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        } 
+        location.reload(); // перезагрузка таблицы
+    }
+
+        function newProduct() {
+            document.getElementById("isNew").value = "true";
+            document.getElementById("productId").value = crypto.randomUUID(),
+            document.getElementById("priceId").value = crypto.randomUUID(),
+
+            // очистка формы
+            document.getElementById("editCode").value = "";
+            document.getElementById("editName").value = "";
+            document.getElementById("editBarCode").value = "";
+            document.getElementById("editQuantity").value = "";
+            document.getElementById("editPrice").value = "";
+            document.getElementById("editModel").value = "";
+            document.getElementById("editSort").value = "";
+            document.getElementById("editColor").value = "";
+            document.getElementById("editSize").value = "";
+            document.getElementById("editWeight").value = "";
+            document.getElementById("editDateChanges").value = new Date().toISOString().split('T')[0];
+        }
+
+    async function deleteProduct(id) {
+        await fetch(`/api/${id}`, { method: 'DELETE' });
+        document.getElementById("row-" + id).remove();
+    }
+</script>
